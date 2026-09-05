@@ -46,6 +46,11 @@ def _show_status() -> int:
     logger.info("Study Assistant v%s started", __version__)
     logger.info("env=%s provider=%s model=%s", settings.app_env, settings.llm_provider, settings.llm_model)
     logger.info("llm_base_url=%s", settings.llm_base_url)
+    logger.info(
+        "embedding_provider=%s embedding_model=%s",
+        settings.embedding_provider,
+        settings.embedding_model,
+    )
     logger.info("data_dir=%s", settings.data_dir)
     return 0
 
