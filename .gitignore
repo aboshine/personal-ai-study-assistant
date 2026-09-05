@@ -1,0 +1,40 @@
+# Secrets and local config
+.env
+*.pem
+*.key
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Personal study materials and generated data
+data/
+*.pdf
+*.PDF
+
+# Local models
+models/
+*.gguf
+*.bin
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
