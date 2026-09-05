@@ -2,7 +2,7 @@
 
 Local-first study assistant for learning from your own course materials.
 
-This repository currently includes the Python project foundation, PDF text extraction, basic local chat via Ollama, and PDF-aware question answering (full document in the prompt; not RAG).
+This repository currently includes the Python project foundation, PDF text extraction, text chunking, local embeddings via Ollama, basic local chat via Ollama, and PDF-aware question answering (full document in the prompt; not RAG).
 
 ## Setup
 
@@ -68,6 +68,30 @@ python -m study_assistant "Say hello in one sentence."
 ```
 
 Connection problems raise `LLMConnectionError`. Invalid HTTP/JSON responses raise `LLMResponseError`.
+
+## Local embeddings (Ollama)
+
+The embeddings layer is provider-independent. The current provider is Ollama’s `/api/embed` endpoint. Provider and model come from `.env` (`EMBEDDING_PROVIDER`, `EMBEDDING_MODEL`); the Ollama host is `LLM_BASE_URL`.
+
+1. Pull the embedding model named in `.env` (default `nomic-embed-text`):
+
+```powershell
+ollama pull nomic-embed-text
+```
+
+Embed text from Python:
+
+```python
+from study_assistant.embeddings import embed, embed_chunks
+from study_assistant.chunking import chunk_document
+from study_assistant.pdf_extraction import extract_pdf
+
+vector = embed("What is a stack?")
+chunks = chunk_document(extract_pdf(r"C:\path\to\notes.pdf"))
+embedded = embed_chunks(chunks)  # same chunk_id / page / path; plus embedding
+```
+
+This produces vectors only. There is no vector database or retrieval yet. Connection problems raise `EmbeddingConnectionError`. Invalid or empty embedding payloads raise `EmbeddingResponseError`.
 
 ## Ask a question about a PDF
 

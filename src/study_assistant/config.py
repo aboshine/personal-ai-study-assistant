@@ -19,6 +19,8 @@ class Settings:
     llm_provider: str
     llm_model: str
     llm_base_url: str
+    embedding_provider: str
+    embedding_model: str
     data_dir: Path
 
 
@@ -36,5 +38,7 @@ def load_settings(dotenv_path: Path | None = None) -> Settings:
         llm_provider=os.getenv("LLM_PROVIDER", "ollama"),
         llm_model=os.getenv("LLM_MODEL", "llama3.2"),
         llm_base_url=os.getenv("LLM_BASE_URL", "http://127.0.0.1:11434"),
+        embedding_provider=os.getenv("EMBEDDING_PROVIDER", "ollama"),
+        embedding_model=os.getenv("EMBEDDING_MODEL", "nomic-embed-text"),
         data_dir=data_dir,
     )
