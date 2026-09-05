@@ -61,7 +61,7 @@ from study_assistant.llm import complete
 print(complete("Say hello in one sentence."))
 ```
 
-Or from the project entry point:
+Or from the CLI:
 
 ```powershell
 python -m study_assistant "Say hello in one sentence."
@@ -73,13 +73,27 @@ Connection problems raise `LLMConnectionError`. Invalid HTTP/JSON responses rais
 
 Extract the PDF, put page-numbered text in the prompt, and ask the configured LLM. The model is instructed to answer only from the document.
 
+CLI:
+
+```powershell
+python -m study_assistant ask-pdf C:\path\to\notes.pdf "What is the definition of a stack?"
+```
+
+or:
+
+```powershell
+study-assistant ask-pdf C:\path\to\notes.pdf "What is the definition of a stack?"
+```
+
+Python:
+
 ```python
 from study_assistant.pdf_qa import answer_from_pdf
 
 print(answer_from_pdf(r"C:\path\to\notes.pdf", "What is the definition of a stack?"))
 ```
 
-Requires Ollama running and the configured model pulled. This sends the full extracted text (not retrieval/RAG).
+Requires Ollama running and the configured model pulled. This sends the full extracted text (not retrieval/RAG). Use `--help` for usage.
 
 ## Tests
 

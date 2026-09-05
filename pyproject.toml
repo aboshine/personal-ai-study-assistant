@@ -19,7 +19,7 @@ dev = [
 ]
 
 [project.scripts]
-study-assistant = "study_assistant.__main__:main"
+study-assistant = "study_assistant.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
