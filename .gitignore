@@ -26,6 +26,9 @@ htmlcov/
 data/
 *.pdf
 *.PDF
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
 
 # Local models
 models/

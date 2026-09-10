@@ -19,7 +19,10 @@ class Settings:
     llm_provider: str
     llm_model: str
     llm_base_url: str
+    embedding_provider: str
+    embedding_model: str
     data_dir: Path
+    vector_store_path: Path
 
 
 def load_settings(dotenv_path: Path | None = None) -> Settings:
@@ -31,10 +34,21 @@ def load_settings(dotenv_path: Path | None = None) -> Settings:
     if not data_dir.is_absolute():
         data_dir = (_PROJECT_ROOT / data_dir).resolve()
 
+    raw_store = os.getenv("VECTOR_STORE_PATH")
+    if raw_store:
+        vector_store_path = Path(raw_store)
+        if not vector_store_path.is_absolute():
+            vector_store_path = (_PROJECT_ROOT / vector_store_path).resolve()
+    else:
+        vector_store_path = data_dir / "vector_store.sqlite"
+
     return Settings(
         app_env=os.getenv("APP_ENV", "development"),
         llm_provider=os.getenv("LLM_PROVIDER", "ollama"),
         llm_model=os.getenv("LLM_MODEL", "llama3.2"),
         llm_base_url=os.getenv("LLM_BASE_URL", "http://127.0.0.1:11434"),
+        embedding_provider=os.getenv("EMBEDDING_PROVIDER", "ollama"),
+        embedding_model=os.getenv("EMBEDDING_MODEL", "nomic-embed-text"),
         data_dir=data_dir,
+        vector_store_path=vector_store_path,
     )

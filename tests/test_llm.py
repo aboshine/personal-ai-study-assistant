@@ -24,7 +24,10 @@ def _settings(**overrides: object) -> Settings:
         "llm_provider": "ollama",
         "llm_model": "llama3.2",
         "llm_base_url": "http://127.0.0.1:11434",
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
         "data_dir": Path("."),
+        "vector_store_path": Path("vector_store.sqlite"),
     }
     values.update(overrides)
     return Settings(**values)  # type: ignore[arg-type]

@@ -12,13 +12,25 @@ def test_load_settings_uses_env_file(tmp_path: Path, monkeypatch: object) -> Non
                 "LLM_PROVIDER=ollama",
                 "LLM_MODEL=test-model",
                 "LLM_BASE_URL=http://127.0.0.1:11434",
+                "EMBEDDING_PROVIDER=ollama",
+                "EMBEDDING_MODEL=nomic-embed-text",
                 "DATA_DIR=./course-data",
+                "VECTOR_STORE_PATH=./course-data/vector_store.sqlite",
             ]
         ),
         encoding="utf-8",
     )
 
-    for key in ("APP_ENV", "LLM_PROVIDER", "LLM_MODEL", "LLM_BASE_URL", "DATA_DIR"):
+    for key in (
+        "APP_ENV",
+        "LLM_PROVIDER",
+        "LLM_MODEL",
+        "LLM_BASE_URL",
+        "EMBEDDING_PROVIDER",
+        "EMBEDDING_MODEL",
+        "DATA_DIR",
+        "VECTOR_STORE_PATH",
+    ):
         monkeypatch.delenv(key, raising=False)
 
     settings = load_settings(dotenv_path=env_file)
@@ -27,8 +39,12 @@ def test_load_settings_uses_env_file(tmp_path: Path, monkeypatch: object) -> Non
     assert settings.llm_provider == "ollama"
     assert settings.llm_model == "test-model"
     assert settings.llm_base_url == "http://127.0.0.1:11434"
+    assert settings.embedding_provider == "ollama"
+    assert settings.embedding_model == "nomic-embed-text"
     assert settings.data_dir.is_absolute()
     assert settings.data_dir.name == "course-data"
+    assert settings.vector_store_path.is_absolute()
+    assert settings.vector_store_path.name == "vector_store.sqlite"
 
 
 def test_load_settings_prefers_process_environment(tmp_path: Path, monkeypatch: object) -> None:
