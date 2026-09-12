@@ -2,13 +2,24 @@
 {% block title %}Library — Study Assistant{% endblock %}
 {% block content %}
   <h1>Library</h1>
-  <p>Upload a course PDF. Indexing uses the existing study assistant; the same filename replaces the previous copy.</p>
+  <p>Upload a course PDF. The same filename replaces the previous indexed copy. Indexing can take a minute while Ollama embeds the text.</p>
   {% if error %}
     <p class="error">{{ error }}</p>
   {% endif %}
-  <form method="post" action="{{ url_for('library') }}" enctype="multipart/form-data">
+  {% if not sources %}
+    <p class="empty">No PDFs are indexed yet. Upload a lecture PDF here before using Ask or Quiz.</p>
+  {% else %}
+    <h2>Indexed materials</h2>
+    <ul class="sources">
+      {% for source in sources %}
+        <li>{{ source.source_path.as_posix() }} — {{ source.chunk_count }} chunk{{ "s" if source.chunk_count != 1 else "" }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  <form method="post" action="{{ url_for('library') }}" enctype="multipart/form-data" data-wait>
     <label for="pdf">PDF file</label>
     <input id="pdf" type="file" name="pdf" accept=".pdf,application/pdf">
     <button type="submit">Index PDF</button>
+    <p class="wait" hidden>Indexing… this can take a minute while Ollama runs locally.</p>
   </form>
 {% endblock %}

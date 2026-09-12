@@ -59,6 +59,9 @@ def test_web_mvp_workflow(tmp_path: Path) -> None:
         assert "No quiz attempts yet." in history
         plan = client.get("/plan").get_data(as_text=True)
         assert "No study plan items." in plan
+        assert "Nothing is indexed yet." in client.get("/ask").get_data(as_text=True)
+        assert "Nothing is indexed yet." in client.get("/quiz").get_data(as_text=True)
+        assert "No PDFs are indexed yet." in client.get("/library").get_data(as_text=True)
 
         empty_ask = client.post("/ask", data={"question": "What is a stack?"})
         assert empty_ask.status_code == 200
@@ -88,6 +91,8 @@ def test_web_mvp_workflow(tmp_path: Path) -> None:
         assert "Indexed" in uploaded_html
         assert "notes.pdf" in uploaded_html
         assert "Stored chunks:" in uploaded_html
+        assert "No PDFs are indexed yet." not in uploaded_html
+        assert "chunk" in uploaded_html
         assert vector_store.count() >= 1
 
         asked = client.post("/ask", data={"question": "What is a stack?"})

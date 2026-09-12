@@ -88,6 +88,7 @@ def test_list_and_delete_by_source(tmp_path: Path) -> None:
         assert remaining is not None
         assert remaining.text == "other"
         assert store.count() == 1
+        assert store.list_source_counts() == ((Path("lab.pdf"), 1),)
 
 
 def test_persists_across_separate_store_instances(tmp_path: Path) -> None:

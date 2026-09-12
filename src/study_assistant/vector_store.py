@@ -73,6 +73,10 @@ class VectorStore(ABC):
         """Return the number of stored chunks."""
 
     @abstractmethod
+    def list_source_counts(self) -> tuple[tuple[Path, int], ...]:
+        """Return each source path and how many chunks it has, sorted by path."""
+
+    @abstractmethod
     def search(
         self,
         query_vector: Sequence[float],
@@ -149,6 +153,17 @@ class SqliteVectorStore(VectorStore):
     def count(self) -> int:
         row = self._connection.execute("SELECT COUNT(*) AS n FROM chunks").fetchone()
         return int(row["n"]) if row is not None else 0
+
+    def list_source_counts(self) -> tuple[tuple[Path, int], ...]:
+        rows = self._connection.execute(
+            """
+            SELECT source_path, COUNT(*) AS n
+            FROM chunks
+            GROUP BY source_path
+            ORDER BY source_path ASC
+            """
+        ).fetchall()
+        return tuple((Path(row["source_path"]), int(row["n"])) for row in rows)
 
     def search(
         self,

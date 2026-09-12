@@ -9,8 +9,8 @@ from flask import Flask, flash, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
 
 from study_assistant.config import Settings, load_settings
-from study_assistant.embeddings.errors import EmbeddingError
-from study_assistant.llm.errors import LLMError
+from study_assistant.embeddings.errors import EmbeddingConnectionError, EmbeddingError
+from study_assistant.llm.errors import LLMConnectionError, LLMError
 from study_assistant.pdf_extraction import PdfExtractionError
 from study_assistant.quiz import (
     DEFAULT_DIFFICULTY,
@@ -77,7 +77,12 @@ def _register_routes(app: Flask) -> None:
                     f"Indexed {indexed.source_path.as_posix()}  Stored chunks: {indexed.chunk_count}"
                 )
                 return redirect(url_for("library"))
-        return render_template("library.html", indexed=indexed, error=error, active="library")
+        return render_template(
+            "library.html",
+            error=error,
+            sources=_indexed_sources(app),
+            active="library",
+        )
 
     @app.route("/ask", methods=["GET", "POST"])
     def ask():
@@ -92,6 +97,7 @@ def _register_routes(app: Flask) -> None:
             result=result,
             error=error,
             question=question,
+            sources=_indexed_sources(app),
             active="ask",
         )
 
@@ -111,6 +117,7 @@ def _register_routes(app: Flask) -> None:
             form=form,
             difficulties=DIFFICULTY_LEVELS,
             question_counts=range(1, MAX_QUESTION_COUNT + 1),
+            sources=_indexed_sources(app),
             active="quiz",
         )
 
@@ -124,6 +131,7 @@ def _register_routes(app: Flask) -> None:
                 form=_quiz_form_defaults(),
                 difficulties=DIFFICULTY_LEVELS,
                 question_counts=range(1, MAX_QUESTION_COUNT + 1),
+                sources=_indexed_sources(app),
                 active="quiz",
             )
         return render_template(
@@ -145,6 +153,7 @@ def _register_routes(app: Flask) -> None:
                 form=_quiz_form_defaults(),
                 difficulties=DIFFICULTY_LEVELS,
                 question_counts=range(1, MAX_QUESTION_COUNT + 1),
+                sources=_indexed_sources(app),
                 active="quiz",
             )
         evaluation, error = _handle_submit_quiz(app, pending)
@@ -204,8 +213,8 @@ def _handle_upload(app: Flask) -> tuple[IndexedPdf | None, str | None]:
     try:
         uploaded.save(destination)
         indexed = app.config["STUDY_ASSISTANT"].index_pdf(destination)
-    except (PdfExtractionError, EmbeddingError, OSError, ValueError) as exc:
-        return None, str(exc)
+    except (PdfExtractionError, EmbeddingError, LLMError, OSError, ValueError) as exc:
+        return None, _public_error(exc)
     return indexed, None
 
 
@@ -215,7 +224,7 @@ def _handle_ask(app: Flask, question: str) -> tuple[RagResult | None, str | None
     try:
         return app.config["STUDY_ASSISTANT"].ask(question), None
     except (EmbeddingError, LLMError, VectorStoreError, ValueError, OSError) as exc:
-        return None, str(exc)
+        return None, _public_error(exc)
 
 
 def _history_rows(attempts: tuple[QuizAttempt, ...]) -> tuple[dict[str, object], ...]:
@@ -289,7 +298,7 @@ def _handle_generate_quiz(app: Flask, form: dict[str, str]) -> tuple[Quiz | None
                 difficulty=difficulty,  # type: ignore[arg-type]
             )
     except (QuizGenerationError, EmbeddingError, LLMError, VectorStoreError, ValueError, OSError) as exc:
-        return None, str(exc)
+        return None, _public_error(exc)
     return quiz, None
 
 
@@ -304,8 +313,25 @@ def _handle_submit_quiz(
     try:
         evaluation, _attempt = app.config["STUDY_ASSISTANT"].evaluate_and_record(quiz, answers)
     except (QuizEvaluationError, QuizAttemptError, ValueError) as exc:
-        return None, str(exc)
+        return None, _public_error(exc)
     return evaluation, None
+
+
+def _indexed_sources(app: Flask) -> tuple[IndexedPdf, ...]:
+    return app.config["STUDY_ASSISTANT"].list_indexed_sources()
+
+
+def _public_error(exc: BaseException) -> str:
+    message = str(exc).strip() or exc.__class__.__name__
+    if isinstance(exc, (LLMConnectionError, EmbeddingConnectionError)):
+        return (
+            "Cannot connect to Ollama. Start Ollama, then run "
+            "`ollama pull llama3.2` and `ollama pull nomic-embed-text`. "
+            f"{message}"
+        )
+    if isinstance(exc, (LLMError, EmbeddingError)):
+        return f"The local model request failed. {message}"
+    return message
 
 
 def _submitted_label(raw: str | None) -> str | None:

@@ -47,13 +47,20 @@ class FakeAssistant:
         self.quiz_calls: list[dict[str, object]] = []
         self.adaptive_calls: list[dict[str, object]] = []
         self.recorded: list[tuple[str, object]] = []
+        self.sources: list[IndexedPdf] = []
+
+    def list_indexed_sources(self) -> tuple[IndexedPdf, ...]:
+        return tuple(self.sources)
 
     def index_pdf(self, pdf_path: str | Path) -> IndexedPdf:
         path = Path(pdf_path)
         self.indexed_paths.append(path)
         if self.error is not None:
             raise self.error
-        return IndexedPdf(source_path=path.resolve(), chunk_count=self.chunk_count)
+        result = IndexedPdf(source_path=path.resolve(), chunk_count=self.chunk_count)
+        self.sources = [item for item in self.sources if item.source_path != result.source_path]
+        self.sources.append(result)
+        return result
 
     def ask(self, question: str) -> RagResult:
         self.questions.append(question)
@@ -147,6 +154,7 @@ def test_library_page_has_nav_and_upload_form(tmp_path: Path) -> None:
     assert ">Quiz</a>" in html
     assert ">History</a>" in html
     assert ">Plan</a>" in html
+    assert "No PDFs are indexed yet." in html
     assert client.get("/").status_code == 302
 
 
@@ -180,6 +188,7 @@ def test_ask_page_has_question_form(tmp_path: Path) -> None:
     assert response.status_code == 200
     assert "<h1>Ask</h1>" in html
     assert 'name="question"' in html
+    assert "Nothing is indexed yet." in html
     assert ">Library</a>" in html
 
 
@@ -214,6 +223,7 @@ def test_ask_shows_rag_error_without_traceback(tmp_path: Path) -> None:
     html = response.get_data(as_text=True)
     assert response.status_code == 200
     assert "Cannot connect to Ollama" in html
+    assert "Start Ollama" in html
     assert "Traceback" not in html
 
 
@@ -234,6 +244,8 @@ def test_upload_saves_pdf_and_indexes_through_assistant(tmp_path: Path) -> None:
     assert "Indexed" in html
     assert "notes.pdf" in html
     assert "Stored chunks: 3" in html
+    assert "3 chunks" in html
+    assert "No PDFs are indexed yet." not in html
 
 
 def test_upload_without_file_shows_error(tmp_path: Path) -> None:
@@ -283,6 +295,8 @@ def test_quiz_page_has_generate_form(tmp_path: Path) -> None:
     assert 'name="count"' in html
     assert 'name="difficulty"' in html
     assert 'name="adaptive"' in html
+    assert "Nothing is indexed yet." in html
+    assert "normal quiz only" in html
     assert ">Library</a>" in html
 
 

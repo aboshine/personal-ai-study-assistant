@@ -29,5 +29,15 @@
     {% endwith %}
     {% block content %}{% endblock %}
   </main>
+  <script>
+    document.addEventListener("submit", function (event) {
+      const form = event.target;
+      if (!(form instanceof HTMLFormElement) || !form.hasAttribute("data-wait")) return;
+      const note = form.querySelector(".wait");
+      const button = form.querySelector("button[type=submit]");
+      if (note) note.hidden = false;
+      if (button instanceof HTMLButtonElement) button.disabled = true;
+    });
+  </script>
 </body>
 </html>

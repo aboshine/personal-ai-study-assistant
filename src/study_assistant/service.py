@@ -68,6 +68,13 @@ class StudyAssistant:
             self.rag.store.upsert(embedded)
         return IndexedPdf(source_path=document.source_path, chunk_count=len(embedded))
 
+    def list_indexed_sources(self) -> tuple[IndexedPdf, ...]:
+        """Return indexed PDF paths and chunk counts from the existing vector store."""
+        return tuple(
+            IndexedPdf(source_path=path, chunk_count=count)
+            for path, count in self.rag.store.list_source_counts()
+        )
+
     def generate_quiz(
         self,
         query: str,

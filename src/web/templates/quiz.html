@@ -3,10 +3,13 @@
 {% block content %}
   <h1>Quiz</h1>
   <p>Generate a quiz from indexed materials. Correct answers stay on the server until you submit.</p>
+  {% if not sources %}
+    <p class="empty">Nothing is indexed yet. Upload a PDF on the Library page first.</p>
+  {% endif %}
   {% if error %}
     <p class="error">{{ error }}</p>
   {% endif %}
-  <form method="post" action="{{ url_for('quiz') }}">
+  <form method="post" action="{{ url_for('quiz') }}" data-wait>
     <label for="query">Topic or query</label>
     <input id="query" type="text" name="query" value="{{ form.query }}">
 
@@ -17,21 +20,38 @@
       {% endfor %}
     </select>
 
-    <label for="difficulty">Difficulty</label>
+    <label for="difficulty">Difficulty (normal quiz only)</label>
     <select id="difficulty" name="difficulty">
       {% for level in difficulties %}
         <option value="{{ level }}" {% if form.difficulty == level %}selected{% endif %}>{{ level }}</option>
       {% endfor %}
     </select>
+    <p class="hint">Used when Adaptive is off. Adaptive quizzes pick difficulty from History (weaker topics first).</p>
 
     <label>
-      <input type="checkbox" name="adaptive" value="1" {% if form.adaptive %}checked{% endif %}>
-      Adaptive (uses quiz history)
+      <input id="adaptive" type="checkbox" name="adaptive" value="1" {% if form.adaptive %}checked{% endif %}>
+      Adaptive
     </label>
+    <p class="hint">Uses your quiz history to emphasize weaker topics. Optional topic names below help when history is empty.</p>
 
     <label for="topics">Topics for adaptive quiz (comma-separated, optional)</label>
     <input id="topics" type="text" name="topics" value="{{ form.topics }}">
 
     <button type="submit">Generate quiz</button>
+    <p class="wait" hidden>Generating… this can take a minute while Ollama runs locally.</p>
   </form>
+  <script>
+    (function () {
+      const adaptive = document.getElementById("adaptive");
+      const difficulty = document.getElementById("difficulty");
+      const topics = document.getElementById("topics");
+      if (!adaptive || !difficulty || !topics) return;
+      function sync() {
+        difficulty.disabled = adaptive.checked;
+        topics.disabled = !adaptive.checked;
+      }
+      adaptive.addEventListener("change", sync);
+      sync();
+    })();
+  </script>
 {% endblock %}

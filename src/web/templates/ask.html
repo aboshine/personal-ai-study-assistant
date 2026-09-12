@@ -2,19 +2,23 @@
 {% block title %}Ask — Study Assistant{% endblock %}
 {% block content %}
   <h1>Ask</h1>
-  <p>Ask a question about your indexed materials. Answers come from the existing study assistant with source citations.</p>
+  <p>Ask a question about your indexed materials. Answers include source and page citations.</p>
+  {% if not sources %}
+    <p class="empty">Nothing is indexed yet. Upload a PDF on the Library page first.</p>
+  {% endif %}
   {% if error %}
     <p class="error">{{ error }}</p>
   {% endif %}
-  <form method="post" action="{{ url_for('ask') }}">
+  <form method="post" action="{{ url_for('ask') }}" data-wait>
     <label for="question">Question</label>
     <textarea id="question" name="question" rows="4" required>{{ question }}</textarea>
     <button type="submit">Ask</button>
+    <p class="wait" hidden>Thinking… this can take a minute while Ollama runs locally.</p>
   </form>
   {% if result %}
     <section class="answer">
       <h2>Answer</h2>
-      <p>{{ result.answer }}</p>
+      <p class="answer-body">{{ result.answer }}</p>
       {% if result.sources %}
         <h2>Sources</h2>
         <ol class="citations">
