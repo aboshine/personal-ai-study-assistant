@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Quiz — Study Assistant{% endblock %}
+{% block content %}
+  <h1>Quiz</h1>
+  <p>Generate a quiz from indexed materials. Correct answers stay on the server until you submit.</p>
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('quiz') }}">
+    <label for="query">Topic or query</label>
+    <input id="query" type="text" name="query" value="{{ form.query }}">
+
+    <label for="count">Questions</label>
+    <select id="count" name="count">
+      {% for n in question_counts %}
+        <option value="{{ n }}" {% if form.count == n|string %}selected{% endif %}>{{ n }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="difficulty">Difficulty</label>
+    <select id="difficulty" name="difficulty">
+      {% for level in difficulties %}
+        <option value="{{ level }}" {% if form.difficulty == level %}selected{% endif %}>{{ level }}</option>
+      {% endfor %}
+    </select>
+
+    <label>
+      <input type="checkbox" name="adaptive" value="1" {% if form.adaptive %}checked{% endif %}>
+      Adaptive (uses quiz history)
+    </label>
+
+    <label for="topics">Topics for adaptive quiz (comma-separated, optional)</label>
+    <input id="topics" type="text" name="topics" value="{{ form.topics }}">
+
+    <button type="submit">Generate quiz</button>
+  </form>
+{% endblock %}

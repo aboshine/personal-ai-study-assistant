@@ -182,6 +182,27 @@ def test_quiz_construction_defaults_difficulty_for_backward_compatibility() -> N
     assert quiz.difficulty == "medium"
 
 
+def test_parse_quiz_response_defaults_missing_topic() -> None:
+    chunks = (_chunk("notes.pdf:p1:c1", "Stacks use LIFO."),)
+    quiz = parse_quiz_response(_quiz_json(), chunks, question_count=1)
+    assert quiz.questions[0].topic == ""
+
+
+def test_parse_quiz_response_stores_topic_when_present() -> None:
+    chunks = (_chunk("notes.pdf:p1:c1", "Stacks use LIFO."),)
+    payload = json.loads(_quiz_json())
+    payload["questions"][0]["topic"] = "  Stacks  "
+    quiz = parse_quiz_response(json.dumps(payload), chunks, question_count=1)
+    assert quiz.questions[0].topic == "Stacks"
+
+
+def test_prompt_asks_for_topic_labels() -> None:
+    chunks = (_chunk("notes.pdf:p1:c1", "Stacks use LIFO."),)
+    prompt = build_quiz_prompt(chunks, question_count=1)
+    assert "short topic label" in prompt
+    assert '"topic":"..."' in prompt
+
+
 def test_prompt_contains_only_supplied_context() -> None:
     chunks = (_chunk("notes.pdf:p1:c1", "Only this sentence is allowed."),)
     prompt = build_quiz_prompt(chunks, question_count=1)

@@ -34,6 +34,8 @@ def _settings(**overrides: object) -> Settings:
         "embedding_model": "nomic-embed-text",
         "data_dir": Path("."),
         "vector_store_path": Path("vector_store.sqlite"),
+        "quiz_attempt_store_path": Path("quiz_attempts.sqlite"),
+        "study_plan_store_path": Path("study_plans.sqlite"),
     }
     values.update(overrides)
     return Settings(**values)  # type: ignore[arg-type]

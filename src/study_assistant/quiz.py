@@ -8,9 +8,10 @@ from __future__ import annotations
 
 import json
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
+from uuid import uuid4
 
 from study_assistant.llm import LLMClient
 from study_assistant.vector_store import SimilarChunk
@@ -60,6 +61,7 @@ class QuizQuestion:
     correct_label: str
     explanation: str
     sources: tuple[QuestionSource, ...]
+    topic: str = ""
 
 
 @dataclass(frozen=True)
@@ -68,6 +70,7 @@ class Quiz:
 
     questions: tuple[QuizQuestion, ...]
     difficulty: Difficulty = DEFAULT_DIFFICULTY
+    quiz_id: str = field(default_factory=lambda: uuid4().hex)
 
 
 class QuizGenerator:
@@ -82,13 +85,19 @@ class QuizGenerator:
         *,
         question_count: int = DEFAULT_QUESTION_COUNT,
         difficulty: Difficulty = DEFAULT_DIFFICULTY,
+        topic_allocation: Sequence[tuple[str, int]] = (),
     ) -> Quiz:
         count = _validate_question_count(question_count)
         level = _validate_difficulty(difficulty)
         if not chunks:
             raise QuizGenerationError("Cannot generate a quiz without retrieved study material")
 
-        prompt = build_quiz_prompt(chunks, question_count=count, difficulty=level)
+        prompt = build_quiz_prompt(
+            chunks,
+            question_count=count,
+            difficulty=level,
+            topic_allocation=topic_allocation,
+        )
         raw = self.llm.complete(prompt)
         return parse_quiz_response(raw, chunks, question_count=count, difficulty=level)
 
@@ -99,9 +108,15 @@ def generate_quiz(
     llm: LLMClient,
     question_count: int = DEFAULT_QUESTION_COUNT,
     difficulty: Difficulty = DEFAULT_DIFFICULTY,
+    topic_allocation: Sequence[tuple[str, int]] = (),
 ) -> Quiz:
     """Convenience wrapper around `QuizGenerator.generate`."""
-    return QuizGenerator(llm).generate(chunks, question_count=question_count, difficulty=difficulty)
+    return QuizGenerator(llm).generate(
+        chunks,
+        question_count=question_count,
+        difficulty=difficulty,
+        topic_allocation=topic_allocation,
+    )
 
 
 def build_quiz_prompt(
@@ -109,6 +124,7 @@ def build_quiz_prompt(
     *,
     question_count: int,
     difficulty: Difficulty = DEFAULT_DIFFICULTY,
+    topic_allocation: Sequence[tuple[str, int]] = (),
 ) -> str:
     """Deterministic quiz prompt. Includes only the supplied chunks."""
     difficulty = _validate_difficulty(difficulty)
@@ -120,6 +136,7 @@ def build_quiz_prompt(
         _format_chunk(index, chunk) for index, chunk in enumerate(chunks, start=1)
     )
     max_citation = len(chunks)
+    topic_block = _format_topic_allocation(topic_allocation)
     return (
         "You are a study assistant that writes multiple-choice quizzes.\n"
         "Use ONLY the retrieved study context below.\n"
@@ -131,6 +148,8 @@ def build_quiz_prompt(
         "Do not mark more than one option as correct.\n"
         "Do not write ambiguous questions where two options could be correct.\n"
         "Each question must have exactly 4 options labeled A, B, C, and D.\n"
+        "Assign each question a short topic label drawn only from the context.\n"
+        f"{topic_block}"
         f"Difficulty: {difficulty}.\n"
         f"{_DIFFICULTY_INSTRUCTIONS[difficulty]}\n"
         f"Generate exactly {question_count} question(s).\n"
@@ -138,7 +157,7 @@ def build_quiz_prompt(
         "Return JSON only, with this shape:\n"
         '{"questions":[{"question":"...","options":[{"label":"A","text":"..."},'
         '{"label":"B","text":"..."},{"label":"C","text":"..."},{"label":"D","text":"..."}],'
-        '"correct_label":"A","explanation":"...","source_citations":[1]}]}\n'
+        '"correct_label":"A","explanation":"...","topic":"...","source_citations":[1]}]}\n'
         "\n"
         "Sources:\n"
         f"{source_list}\n"
@@ -168,6 +187,29 @@ def parse_quiz_response(
 
     questions = tuple(_parse_question(item, chunks, index=index) for index, item in enumerate(raw_questions, start=1))
     return Quiz(questions=questions, difficulty=level)
+
+
+def _format_topic_allocation(topic_allocation: Sequence[tuple[str, int]]) -> str:
+    if not topic_allocation:
+        return ""
+    names: list[str] = []
+    parts: list[str] = []
+    for topic, count in topic_allocation:
+        label = topic.strip()
+        if not label:
+            continue
+        names.append(label)
+        parts.append(f"{label}: {count}")
+    if not names:
+        return ""
+    return (
+        "Prioritize these topics (weakest first): "
+        + ", ".join(names)
+        + ".\n"
+        "Question allocation: "
+        + "; ".join(parts)
+        + ".\n"
+    )
 
 
 def _validate_question_count(question_count: int) -> int:
@@ -230,12 +272,14 @@ def _parse_question(item: Any, chunks: Sequence[SimilarChunk], *, index: int) ->
         raise QuizGenerationError(f"Question {index} correct_label must be one of A, B, C, D")
 
     sources = _parse_sources(item.get("source_citations"), chunks, question_index=index)
+    topic = _optional_topic(item.get("topic"), question_index=index)
     return QuizQuestion(
         question=question,
         options=options,
         correct_label=correct_label,
         explanation=explanation,
         sources=sources,
+        topic=topic,
     )
 
 
@@ -297,4 +341,12 @@ def _parse_sources(
 def _required_text(value: Any, *, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise QuizGenerationError(f"{field} must be a non-empty string")
+    return value.strip()
+
+
+def _optional_topic(value: Any, *, question_index: int) -> str:
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        raise QuizGenerationError(f"Question {question_index} topic must be a string")
     return value.strip()

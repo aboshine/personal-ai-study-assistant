@@ -16,6 +16,8 @@ def test_load_settings_uses_env_file(tmp_path: Path, monkeypatch: object) -> Non
                 "EMBEDDING_MODEL=nomic-embed-text",
                 "DATA_DIR=./course-data",
                 "VECTOR_STORE_PATH=./course-data/vector_store.sqlite",
+                "QUIZ_ATTEMPT_STORE_PATH=./course-data/quiz_attempts.sqlite",
+                "STUDY_PLAN_STORE_PATH=./course-data/study_plans.sqlite",
             ]
         ),
         encoding="utf-8",
@@ -30,6 +32,8 @@ def test_load_settings_uses_env_file(tmp_path: Path, monkeypatch: object) -> Non
         "EMBEDDING_MODEL",
         "DATA_DIR",
         "VECTOR_STORE_PATH",
+        "QUIZ_ATTEMPT_STORE_PATH",
+        "STUDY_PLAN_STORE_PATH",
     ):
         monkeypatch.delenv(key, raising=False)
 
@@ -45,6 +49,10 @@ def test_load_settings_uses_env_file(tmp_path: Path, monkeypatch: object) -> Non
     assert settings.data_dir.name == "course-data"
     assert settings.vector_store_path.is_absolute()
     assert settings.vector_store_path.name == "vector_store.sqlite"
+    assert settings.quiz_attempt_store_path.is_absolute()
+    assert settings.quiz_attempt_store_path.name == "quiz_attempts.sqlite"
+    assert settings.study_plan_store_path.is_absolute()
+    assert settings.study_plan_store_path.name == "study_plans.sqlite"
 
 
 def test_load_settings_prefers_process_environment(tmp_path: Path, monkeypatch: object) -> None:

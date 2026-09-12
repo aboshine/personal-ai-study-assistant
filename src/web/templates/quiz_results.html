@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Quiz results — Study Assistant{% endblock %}
+{% block content %}
+  <h1>Quiz results</h1>
+  <p class="score">
+    Score: {{ evaluation.correct_count }}/{{ evaluation.total_questions }}
+    ({{ "%.1f"|format(evaluation.score_percent) }}%)
+  </p>
+  <p>
+    correct={{ evaluation.correct_count }}
+    incorrect={{ evaluation.incorrect_count }}
+    unanswered={{ evaluation.unanswered_count }}
+  </p>
+  {% for question, result in items %}
+    <section class="question">
+      <h2>
+        Q{{ result.question_index + 1 }}
+        {% if result.is_correct %}correct{% elif result.is_unanswered %}unanswered{% else %}incorrect{% endif %}
+      </h2>
+      <p>{{ question.question }}</p>
+      <p>Selected: {{ result.selected_label or "-" }}  Answer: {{ result.correct_label }}</p>
+      <p>{{ result.explanation }}</p>
+      {% if result.sources %}
+        <ul class="citations">
+          {% for source in result.sources %}
+            <li>[{{ source.citation_index }}] {{ source.source_path.as_posix() }}, page {{ source.page_number }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </section>
+  {% endfor %}
+  <p><a href="{{ url_for('quiz') }}">Generate another quiz</a></p>
+{% endblock %}

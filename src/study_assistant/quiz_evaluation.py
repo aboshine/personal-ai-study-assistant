@@ -36,6 +36,7 @@ class QuestionResult:
     is_unanswered: bool
     explanation: str
     sources: tuple[QuestionSource, ...]
+    topic: str = ""
 
 
 @dataclass(frozen=True)
@@ -80,6 +81,7 @@ def evaluate_quiz(quiz: Quiz, answers: Sequence[SubmittedAnswer]) -> QuizEvaluat
                 is_unanswered=unanswered,
                 explanation=question.explanation,
                 sources=question.sources,
+                topic=question.topic,
             )
         )
 

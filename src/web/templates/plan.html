@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Plan — Study Assistant{% endblock %}
+{% block content %}
+  <h1>Plan</h1>
+  <p>Current study plan from the existing planner.</p>
+  {% if not plan.items %}
+    <p>No study plan items.</p>
+  {% else %}
+    <ol class="plan">
+      {% for item in plan.items %}
+        <li>
+          <p class="score">
+            {{ item.priority }}. {{ item.topic }}
+            — difficulty={{ item.recommended_difficulty }}
+            — review={{ item.next_review.isoformat() }}
+          </p>
+          <p>{{ item.reason }}</p>
+        </li>
+      {% endfor %}
+    </ol>
+  {% endif %}
+{% endblock %}

@@ -2,7 +2,7 @@
 
 Local-first study assistant for learning from your own course materials.
 
-This repository currently includes the Python project foundation, PDF text extraction, basic local chat via Ollama, PDF-aware question answering, chunking, local embeddings, a SQLite vector store, cosine similarity retrieval, a minimal local RAG pipeline, and multiple-choice quiz generation from retrieved chunks.
+This repository currently includes a local CLI, a minimal Flask Library UI for PDF indexing, PDF text extraction, indexing into the local vector store, basic local chat via Ollama, PDF-aware question answering, chunking, local embeddings, a SQLite vector store, cosine similarity retrieval, a minimal local RAG pipeline, multiple-choice quiz generation from retrieved chunks, quiz evaluation, persistent quiz attempt history, and topic-level knowledge tracking.
 
 ## Setup
 
@@ -19,12 +19,20 @@ copy .env.example .env
 
 ```powershell
 python -m study_assistant
+python -m study_assistant index C:\path\to\notes.pdf
+python -m study_assistant ask "What is a stack?"
+python -m study_assistant quiz stacks --count 2 --difficulty medium
+python -m study_assistant adaptive stacks --topics Queues,Stacks
+python -m study_assistant plan
+python -m study_assistant evaluate quiz.json A B
+python -m web
 ```
 
 or:
 
 ```powershell
 study-assistant
+study-assistant-web
 ```
 
 ## PDF extraction
@@ -95,6 +103,14 @@ print(answer_from_pdf(r"C:\path\to\notes.pdf", "What is the definition of a stac
 ```
 
 Requires Ollama running and the configured model pulled. This sends the full extracted text (not retrieval/RAG). Use `--help` for usage.
+
+## Index a PDF
+
+Extract, chunk, embed, and store a local PDF in the vector store. Re-indexing the same file replaces its previous chunks.
+
+```powershell
+python -m study_assistant index C:\path\to\notes.pdf
+```
 
 ## Embeddings
 
@@ -180,7 +196,7 @@ maps `[1]` to `result.sources[0]` (for example `notes.pdf`, page 1). The model i
 
 ## Quiz generation
 
-Generate multiple-choice questions from retrieved chunks (not from a database query inside the quiz module). Each question has four options, one correct answer, an explanation, and source/page references.
+Generate multiple-choice questions from retrieved chunks (not from a database query inside the quiz module). Each question has four options, one correct answer, an explanation, optional topic metadata, and source/page references.
 
 ```python
 from study_assistant.llm import get_llm_client
@@ -219,6 +235,47 @@ print(result.correct_count, result.incorrect_count, result.unanswered_count, res
 for item in result.question_results:
     print(item.question_index, item.selected_label, item.correct_label, item.is_correct)
     print(item.explanation)
+```
+
+`python -m study_assistant evaluate quiz.json A B` scores a saved quiz JSON file and records the attempt in local SQLite history (`QUIZ_ATTEMPT_STORE_PATH`, default `DATA_DIR/quiz_attempts.sqlite`). Adaptive quizzes and `plan` read that history. The store does not score quizzes or call Ollama.
+
+```python
+from study_assistant.quiz_attempt_store import SqliteQuizAttemptStore, get_quiz_attempt_store
+from study_assistant.quiz_attempts import create_quiz_attempt
+
+attempt = create_quiz_attempt(quiz, result)
+with SqliteQuizAttemptStore(r"C:\path\to\quiz_attempts.sqlite") as store:
+    store.add(attempt)
+    loaded = store.get(attempt.attempt_id)
+```
+
+Or open the configured path with `get_quiz_attempt_store()`.
+
+## Topic knowledge tracking
+
+Topic stats are computed from completed attempts only. Unanswered questions count toward a topic appearing in an attempt but not toward accuracy. Questions without a topic are ignored.
+
+```python
+from study_assistant.topic_tracking import summarize_topic_performance
+
+for item in summarize_topic_performance(store.list_all()):
+    print(item.topic, item.attempt_count, item.questions_answered, item.correct_count, item.accuracy)
+```
+
+## Adaptive quizzes
+
+Topic choice and difficulty come from stored topic stats, not from the LLM. `generate_adaptive_quiz` passes that plan into `QuizGenerator`, so the prompt includes the selected topics and difficulty. Weaker topics get more questions. With no history the default is `medium` and the usual question count; pass `available_topics` to start from those names (treated as unpracticed).
+
+```python
+from study_assistant.adaptive_quiz import generate_adaptive_quiz, plan_adaptive_quiz
+
+plan = plan_adaptive_quiz(summarize_topic_performance(store.list_all()), question_count=3)
+quiz = generate_adaptive_quiz(
+    retrieved_chunks,
+    llm=get_llm_client(),
+    attempts=store.list_all(),
+    question_count=3,
+)
 ```
 
 ## Tests

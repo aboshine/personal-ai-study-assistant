@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}History — Study Assistant{% endblock %}
+{% block content %}
+  <h1>History</h1>
+  <p>Completed quiz attempts from the study assistant history store.</p>
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+  {% if not rows %}
+    <p>No quiz attempts yet.</p>
+  {% else %}
+    <ul class="history">
+      {% for row in rows %}
+        <li>
+          <p class="score">
+            {{ row.attempt.timestamp.isoformat() }}
+            — {{ row.attempt.difficulty }}
+            — {{ row.attempt.evaluation.correct_count }}/{{ row.attempt.evaluation.total_questions }}
+            ({{ "%.1f"|format(row.attempt.evaluation.score_percent) }}%)
+          </p>
+          <p>Topics: {% if row.topics %}{{ row.topics | join(", ") }}{% else %}—{% endif %}</p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}

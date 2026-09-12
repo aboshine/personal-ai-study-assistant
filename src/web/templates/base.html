@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Study Assistant{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <p class="brand">Study Assistant</p>
+    <nav>
+      <a href="{{ url_for('library') }}" {% if active == 'library' %}class="active"{% endif %}>Library</a>
+      <a href="{{ url_for('ask') }}" {% if active == 'ask' %}class="active"{% endif %}>Ask</a>
+      <a href="{{ url_for('quiz') }}" {% if active == 'quiz' %}class="active"{% endif %}>Quiz</a>
+      <a href="{{ url_for('history') }}" {% if active == 'history' %}class="active"{% endif %}>History</a>
+      <a href="{{ url_for('plan') }}" {% if active == 'plan' %}class="active"{% endif %}>Plan</a>
+    </nav>
+  </header>
+  <main>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="flash">
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

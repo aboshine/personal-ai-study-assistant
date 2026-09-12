@@ -106,12 +106,30 @@ def test_mixed_and_unanswered_answers() -> None:
     assert first.explanation == "Stacks use LIFO."
     assert first.sources[0].chunk_id == "notes.pdf:p1:c1"
     assert first.sources[0].page_number == 1
+    assert first.topic == ""
     assert second.selected_label is None
     assert second.is_unanswered is True
     assert second.is_correct is False
     assert second.explanation == "Queues use FIFO."
     assert second.sources[0].source_path == Path("ds.pdf")
     assert second.sources[0].page_number == 3
+
+
+def test_evaluation_copies_question_topic() -> None:
+    quiz = Quiz(
+        questions=(
+            QuizQuestion(
+                question="What ordering does a stack use?",
+                options=_options("LIFO", "FIFO", "Heap", "Graph"),
+                correct_label="A",
+                explanation="Stacks use LIFO.",
+                sources=(_source("notes.pdf:p1:c1", page=1),),
+                topic="Stacks",
+            ),
+        )
+    )
+    result = evaluate_quiz(quiz, (SubmittedAnswer(0, "A"),))
+    assert result.question_results[0].topic == "Stacks"
 
 
 def test_explicit_unanswered_label() -> None:

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Ask — Study Assistant{% endblock %}
+{% block content %}
+  <h1>Ask</h1>
+  <p>Ask a question about your indexed materials. Answers come from the existing study assistant with source citations.</p>
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('ask') }}">
+    <label for="question">Question</label>
+    <textarea id="question" name="question" rows="4" required>{{ question }}</textarea>
+    <button type="submit">Ask</button>
+  </form>
+  {% if result %}
+    <section class="answer">
+      <h2>Answer</h2>
+      <p>{{ result.answer }}</p>
+      {% if result.sources %}
+        <h2>Sources</h2>
+        <ol class="citations">
+          {% for source in result.sources %}
+            <li>[{{ loop.index }}] {{ source.source_path.as_posix() }}, page {{ source.page_number }}</li>
+          {% endfor %}
+        </ol>
+      {% endif %}
+    </section>
+  {% endif %}
+{% endblock %}

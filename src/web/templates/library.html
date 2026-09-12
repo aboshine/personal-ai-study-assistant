@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Library — Study Assistant{% endblock %}
+{% block content %}
+  <h1>Library</h1>
+  <p>Upload a course PDF. Indexing uses the existing study assistant; the same filename replaces the previous copy.</p>
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('library') }}" enctype="multipart/form-data">
+    <label for="pdf">PDF file</label>
+    <input id="pdf" type="file" name="pdf" accept=".pdf,application/pdf">
+    <button type="submit">Index PDF</button>
+  </form>
+{% endblock %}
